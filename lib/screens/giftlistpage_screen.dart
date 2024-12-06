@@ -102,6 +102,20 @@ class _GiftListPageState extends State<GiftListPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
+                    icon: const Icon(Icons.card_giftcard,
+                    color: Colors.green,),
+                    onPressed: () {
+                      // Logic to pledge this gift
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Pledged: ${gift["name"]}"),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                  ),
+
+                  IconButton(
                     icon: const Icon(Icons.edit, color: Colors.blue),
                     onPressed: gift["isPledged"]
                         ? null
