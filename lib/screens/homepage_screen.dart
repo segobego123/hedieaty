@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'addfriend_screen.dart';
 import 'eventlistpage_screen.dart';
 import 'giftlistpage_screen.dart';
+import 'createeventlist_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -29,7 +31,7 @@ class _HomePageState extends State<HomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GiftListPage(friendName: friendName),
+        builder: (context) => GiftListPage(friendName: friendName, eventName: '',),
       ),
     );
   }
@@ -43,15 +45,35 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void addFriend() {
-    // Logic to add a friend manually or from the contact list
-    print("Add friend logic goes here");
+  void addFriend() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddFriendPage(),
+      ),
+    );
+
+    if (result != null && result is Map<String, String>) {
+      print("Friend added: ${result['name']} - ${result['phone']}");
+      // Add result to your friend list
+    }
   }
 
-  void createEventOrList() {
-    // Logic to create a new event or gift list
-    print("Create event/list logic goes here");
+
+  void createEventOrList() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CreateEventListPage(),
+      ),
+    );
+
+    if (result != null && result is Map<String, dynamic>) {
+      print("Event/List created: $result");
+      // Add result to your events/lists
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
