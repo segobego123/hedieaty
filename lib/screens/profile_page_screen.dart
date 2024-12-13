@@ -1,135 +1,97 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
-class ProfilePageScreen extends StatelessWidget {
-  // Mock user information
-  final Map<String, String> userInfo = {
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "phone": "+1234567890",
-  };
+class ProfilePageScreen extends StatefulWidget {
+  const ProfilePageScreen({super.key});
 
-  // Mock list of events
-  final List<Map<String, dynamic>> userEvents = [
-    {"eventName": "John's Birthday", "gifts": 5, "friendName": "You"},
-    {"eventName": "Alice's Wedding", "gifts": 2, "friendName": "Alice"},
-    {"eventName": "Team Outing", "gifts": 3, "friendName": "Bob"},
-  ];
+  @override
+  State<ProfilePageScreen> createState() => _ProfilePageScreenState();
+}
 
-  ProfilePageScreen({super.key});
+class _ProfilePageScreenState extends State<ProfilePageScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
-  // Navigate to the Gift List Page
-  void navigateToEventGifts(BuildContext context, String eventName, String friendName) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GiftListPage(eventName: eventName, friendName: friendName),
-      ),
-    );
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
+
+  User? _currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
   }
 
-  // Navigate to My Pledged Gifts Page
-  void navigateToPledgedGifts(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const MyPledgedGiftsPage(),
-      ),
-    );
+  Future<void> _loadUserData() async {
+    _currentUser = _auth.currentUser;
+
+    if (_currentUser != null) {
+      final userSnapshot =
+      await _databaseRef.child('users/${_currentUser!.uid}').get();
+
+      if (userSnapshot.exists) {
+        final userData = Map<String, dynamic>.from(userSnapshot.value as Map);
+        _nameController.text = userData['name'] ?? '';
+        _emailController.text = userData['email'] ?? '';
+        _phoneController.text = userData['phone'] ?? '';
+      }
+    }
+  }
+
+  Future<void> _updateUserData() async {
+    if (_currentUser == null) return;
+
+    try {
+      await _databaseRef.child('users/${_currentUser!.uid}').update({
+        'name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update profile')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Profile"),
+        title: const Text('Profile'),
         backgroundColor: Colors.deepOrangeAccent,
       ),
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
-        children: [
-          // User Information Section
-          const Text(
-            "User Information",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          ListTile(
-            leading: const Icon(Icons.person, color: Colors.deepOrangeAccent),
-            title: Text(userInfo["name"]!),
-          ),
-          ListTile(
-            leading: const Icon(Icons.email, color: Colors.deepOrangeAccent),
-            title: Text(userInfo["email"]!),
-          ),
-          ListTile(
-            leading: const Icon(Icons.phone, color: Colors.deepOrangeAccent),
-            title: Text(userInfo["phone"]!),
-          ),
-          const Divider(thickness: 1, height: 32),
-          // My Events Section
-          const Text(
-            "My Events",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          ...userEvents.map(
-                (event) => ListTile(
-              title: Text(event["eventName"]),
-              subtitle: Text("Gifts: ${event["gifts"]}"),
-              trailing: const Icon(Icons.arrow_forward),
-              onTap: () => navigateToEventGifts(context, event["eventName"], event["friendName"]),
+        child: Column(
+          children: [
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Full Name'),
             ),
-          ),
-          const Divider(thickness: 1, height: 32),
-          // Navigate to Pledged Gifts Page
-          ElevatedButton(
-            onPressed: () => navigateToPledgedGifts(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepOrangeAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+              readOnly: true, // Email should typically not be editable
             ),
-            child: const Text("View My Pledged Gifts"),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Mock GiftListPage
-class GiftListPage extends StatelessWidget {
-  final String eventName;
-  final String friendName;
-
-  const GiftListPage({super.key, required this.eventName, required this.friendName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(friendName == "You" ? "$eventName - Gifts" : "$friendName's Event Gifts"),
-        backgroundColor: Colors.deepOrangeAccent,
-      ),
-      body: Center(
-        child: Text("Gifts for $eventName (Owner: $friendName)"),
-      ),
-    );
-  }
-}
-
-// Mock MyPledgedGiftsPage
-class MyPledgedGiftsPage extends StatelessWidget {
-  const MyPledgedGiftsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Pledged Gifts"),
-        backgroundColor: Colors.deepOrangeAccent,
-      ),
-      body: const Center(
-        child: Text("List of pledged gifts will appear here."),
+            TextFormField(
+              controller: _phoneController,
+              decoration: const InputDecoration(labelText: 'Phone Number'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _updateUserData,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrangeAccent),
+              child: const Text('Save Changes'),
+            ),
+          ],
+        ),
       ),
     );
   }

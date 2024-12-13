@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_page_screen.dart';
 import 'event_list_screen.dart';
 
@@ -7,9 +8,19 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: Text('Error: No user logged in')),
+      );
+    }
+
+    final String userId = user.uid;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gift Manager Home'),
+        title: const Text('Hedieaty'),
         backgroundColor: Colors.deepOrangeAccent,
       ),
       drawer: Drawer(
@@ -32,27 +43,48 @@ class HomeScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.person),
               title: const Text('Profile'),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfilePageScreen())),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfilePageScreen(),
+                  ),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.event),
               title: const Text('My Events'),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EventListScreen())),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => EventListScreen()),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Logout'),
-              onTap: () {
-                // Handle logout logic
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/login');
+              onTap: () async {
+                try {
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.pop(context);
+                  Navigator.pushReplacementNamed(context, '/login');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logged out successfully')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error logging out: $e')),
+                  );
+                }
               },
             ),
           ],
         ),
       ),
       body: const Center(
-        child: Text('Welcome to the Gift Manager App!'),
+        child: Text('Welcome to Hedieaty!'),
       ),
     );
   }

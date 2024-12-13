@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/home_screen.dart'; // Import your Home Screen or starting screen
-import 'screens/login_screen.dart'; // Import the Login Screen
-import 'screens/profile_page_screen.dart'; // Import Profile Page
+import 'package:firebase_auth/firebase_auth.dart';
+import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/signup_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,15 +19,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Gift Management App',
+      title: 'Hedieaty',
       theme: ThemeData(
         primarySwatch: Colors.deepOrange,
       ),
-      initialRoute: '/',
+      // Check if a user is already logged in
+      initialRoute: FirebaseAuth.instance.currentUser == null ? '/login' : '/home',
       routes: {
-        '/': (context) => const LoginScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/signup': (context) => const SignupScreen(),
         '/home': (context) => const HomeScreen(),
-        '/profile': (context) => ProfilePageScreen(),
       },
     );
   }

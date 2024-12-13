@@ -29,9 +29,10 @@ class DatabaseService {
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE Users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY, -- Changed to TEXT
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
+        phone TEXT NOT NULL,
         preferences TEXT
       )
     ''');
@@ -43,7 +44,7 @@ class DatabaseService {
         date TEXT NOT NULL,
         location TEXT,
         description TEXT,
-        userId INTEGER NOT NULL,
+        userId TEXT NOT NULL, -- Changed to TEXT
         FOREIGN KEY (userId) REFERENCES Users (id) ON DELETE CASCADE
       )
     ''');
@@ -63,8 +64,8 @@ class DatabaseService {
 
     await db.execute('''
       CREATE TABLE Friends (
-        userId INTEGER NOT NULL,
-        friendId INTEGER NOT NULL,
+        userId TEXT NOT NULL, -- Changed to TEXT
+        friendId TEXT NOT NULL, -- Changed to TEXT
         PRIMARY KEY (userId, friendId),
         FOREIGN KEY (userId) REFERENCES Users (id) ON DELETE CASCADE,
         FOREIGN KEY (friendId) REFERENCES Users (id) ON DELETE CASCADE
@@ -84,6 +85,28 @@ class DatabaseService {
     return await db.query('Users');
   }
 
+  /// Fetch a specific user by ID
+  Future<Map<String, dynamic>?> getUserById(String userId) async {
+    final db = await database;
+    final result = await db.query(
+      'Users',
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  /// Update user information
+  Future<int> updateUser(String userId, Map<String, dynamic> updates) async {
+    final db = await database;
+    return await db.update(
+      'Users',
+      updates,
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
+  }
+
   /// Insert an event
   Future<int> insertEvent(Map<String, dynamic> event) async {
     final db = await database;
@@ -91,7 +114,7 @@ class DatabaseService {
   }
 
   /// Fetch all events for a specific user
-  Future<List<Map<String, dynamic>>> getEvents(int userId) async {
+  Future<List<Map<String, dynamic>>> getEvents(String userId) async {
     final db = await database;
     return await db.query(
       'Events',
@@ -117,7 +140,7 @@ class DatabaseService {
   }
 
   /// Insert a friend connection
-  Future<int> addFriend(int userId, int friendId) async {
+  Future<int> addFriend(String userId, String friendId) async {
     final db = await database;
     return await db.insert(
       'Friends',
@@ -127,7 +150,7 @@ class DatabaseService {
   }
 
   /// Fetch all friends of a user
-  Future<List<Map<String, dynamic>>> getFriends(int userId) async {
+  Future<List<Map<String, dynamic>>> getFriends(String userId) async {
     final db = await database;
     return await db.query(
       'Friends',
@@ -158,7 +181,7 @@ class DatabaseService {
   }
 
   /// Delete a user and cascade their data
-  Future<int> deleteUser(int userId) async {
+  Future<int> deleteUser(String userId) async {
     final db = await database;
     return await db.delete(
       'Users',
