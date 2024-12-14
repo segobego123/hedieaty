@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -16,7 +16,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
-  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
 
   Future<void> _registerUser() async {
     if (_formKey.currentState!.validate()) {
@@ -30,8 +29,8 @@ class _SignupScreenState extends State<SignupScreen> {
         // Get the newly created user's UID
         String uid = userCredential.user!.uid;
 
-        // Save additional user details in Realtime Database
-        await _databaseRef.child('users/$uid').set({
+        // Save additional user details in Firestore
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'name': _nameController.text.trim(),
           'email': _emailController.text.trim(),
           'phone': _phoneController.text.trim(),

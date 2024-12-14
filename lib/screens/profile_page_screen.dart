@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfilePageScreen extends StatefulWidget {
-  const ProfilePageScreen({super.key});
+  const ProfilePageScreen({super.key, required String userId});
 
   @override
   State<ProfilePageScreen> createState() => _ProfilePageScreenState();
@@ -15,7 +15,7 @@ class _ProfilePageScreenState extends State<ProfilePageScreen> {
   final TextEditingController _phoneController = TextEditingController();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   User? _currentUser;
 
@@ -29,11 +29,11 @@ class _ProfilePageScreenState extends State<ProfilePageScreen> {
     _currentUser = _auth.currentUser;
 
     if (_currentUser != null) {
-      final userSnapshot =
-      await _databaseRef.child('users/${_currentUser!.uid}').get();
+      final userDoc =
+      await _firestore.collection('users').doc(_currentUser!.uid).get();
 
-      if (userSnapshot.exists) {
-        final userData = Map<String, dynamic>.from(userSnapshot.value as Map);
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
         _nameController.text = userData['name'] ?? '';
         _emailController.text = userData['email'] ?? '';
         _phoneController.text = userData['phone'] ?? '';
@@ -45,8 +45,9 @@ class _ProfilePageScreenState extends State<ProfilePageScreen> {
     if (_currentUser == null) return;
 
     try {
-      await _databaseRef.child('users/${_currentUser!.uid}').update({
+      await _firestore.collection('users').doc(_currentUser!.uid).update({
         'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
       });
 

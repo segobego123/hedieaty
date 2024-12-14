@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_page_screen.dart';
 import 'event_list_screen.dart';
+import 'manage_friends_screen.dart'; // Import Friend Management Screen
+import 'create_event_screen.dart';   // Import Event Creation Screen
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -47,7 +49,7 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ProfilePageScreen(),
+                    builder: (_) => ProfilePageScreen(userId: userId),
                   ),
                 );
               },
@@ -58,7 +60,18 @@ class HomeScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => EventListScreen()),
+                  MaterialPageRoute(builder: (_) =>  EventListScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.group),
+              title: const Text('Manage Friends'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ManageFriendsScreen()),
                 );
               },
             ),
@@ -83,8 +96,63 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: const Center(
-        child: Text('Welcome to Hedieaty!'),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const CreateEventScreen()),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Create Event'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrangeAccent,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 32, vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => EventListScreen()),
+                );
+              },
+              icon: const Icon(Icons.event),
+              label: const Text('View Events'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrangeAccent,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 32, vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ManageFriendsScreen()),
+                );
+              },
+              icon: const Icon(Icons.group),
+              label: const Text('Manage Friends'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrangeAccent,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 32, vertical: 16),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
