@@ -30,7 +30,7 @@ class FriendSpecificScreen extends StatelessWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => GiftDetailsScreen(gift: gift),
+                  builder: (_) => GiftDetailsScreen(gift: gift, giftId: '', eventId: '',),
                 ),
               ),
             ),

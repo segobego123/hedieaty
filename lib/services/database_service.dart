@@ -19,7 +19,7 @@ class DatabaseService {
     final databasePath = await getDatabasesPath();
     final path = join(databasePath, 'hedieaty.db');
 
-    await deleteDatabase(path);
+    // await deleteDatabase(path);
 
     return await openDatabase(
       path,
