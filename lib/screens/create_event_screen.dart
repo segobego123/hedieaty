@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:project_phase_1/services/database_service.dart'; // Import your DatabaseService
+import 'package:firebase_auth/firebase_auth.dart'; // For Firebase Authentication
+import 'package:project_phase_1/services/database_service.dart';
+import 'package:intl/intl.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({Key? key}) : super(key: key);
@@ -11,26 +13,45 @@ class CreateEventScreen extends StatefulWidget {
 
 class _CreateEventScreenState extends State<CreateEventScreen> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-
+  DateTime? _selectedEventDate; // Store event date as DateTime
   final List<Map<String, String>> gifts = [];
+  final DatabaseService _dbService = DatabaseService();
 
-  final DatabaseService _dbService = DatabaseService(); // Initialize DatabaseService
+  User? _currentUser; // Store the currently logged-in user
 
-  Future<void> _saveEventToDatabase(String userId) async {
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentUser();
+  }
+
+  Future<void> _getCurrentUser() async {
+    setState(() {
+      _currentUser = FirebaseAuth.instance.currentUser; // Get current Firebase user
+    });
+  }
+
+  Future<void> _saveEventToDatabase() async {
+    if (_currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not logged in')),
+      );
+      return;
+    }
+
     try {
-      // Insert event
+      // Save event locally with the user's ID
       final eventId = await _dbService.insertEvent({
-        'name': _nameController.text,
-        'date': _dateController.text,
-        'location': _locationController.text,
-        'description': _descriptionController.text,
-        'userId': userId,
+        'name': _nameController.text.trim(),
+        'date': _selectedEventDate?.toIso8601String(),
+        'location': _locationController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'userId': _currentUser!.uid, // Save the userId
       });
 
-      // Insert gifts linked to the event
+      // Save associated gifts to the database
       for (var gift in gifts) {
         await _dbService.insertGift({
           'name': gift['name']!,
@@ -52,10 +73,16 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
-  Future<void> _publishEventToFirestore(String userId) async {
+  Future<void> _publishEventToFirestore() async {
+    if (_currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not logged in')),
+      );
+      return;
+    }
+
     try {
-      // Fetch events from local database
-      final events = await _dbService.getEvents(userId);
+      final events = await _dbService.getEvents(_currentUser!.uid);
 
       if (events.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -65,7 +92,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       }
 
       for (var event in events) {
-        // Upload event to Firestore
+        // Publish event to Firestore
         final eventRef = await FirebaseFirestore.instance
             .collection('events')
             .add({
@@ -73,10 +100,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           'date': event['date'],
           'location': event['location'],
           'description': event['description'],
-          'userId': userId,
+          'userId': event['userId'], // Include userId when publishing
         });
 
-        // Fetch and upload associated gifts
+        // Publish associated gifts to Firestore
         final giftsData = await _dbService.getGifts(event['id']);
         for (var gift in giftsData) {
           await FirebaseFirestore.instance
@@ -92,8 +119,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           });
         }
 
-        // Optionally delete from local database after publishing
-        await _dbService.deleteEvent(event['id']);
+        // Optionally delete the event locally after publishing
+        // await _dbService.deleteEvent(event['id']);
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,6 +130,21 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error publishing events: $e')),
       );
+    }
+  }
+
+  Future<void> _selectEventDate(BuildContext context) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedEventDate ?? DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+
+    if (pickedDate != null && pickedDate != _selectedEventDate) {
+      setState(() {
+        _selectedEventDate = pickedDate;
+      });
     }
   }
 
@@ -175,8 +217,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = 'dummy_user_id'; // Replace with FirebaseAuth user ID
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Event'),
@@ -190,10 +230,23 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Event Name'),
             ),
-            TextField(
-              controller: _dateController,
-              decoration: const InputDecoration(labelText: 'Event Date'),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _selectedEventDate == null
+                      ? 'Select Event Date'
+                      : 'Date: ${DateFormat('yyyy-MM-dd').format(_selectedEventDate!)}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                ElevatedButton(
+                  onPressed: () => _selectEventDate(context),
+                  child: const Text('Choose Date'),
+                ),
+              ],
             ),
+            const SizedBox(height: 10),
             TextField(
               controller: _locationController,
               decoration: const InputDecoration(labelText: 'Location'),
@@ -210,13 +263,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: () => _saveEventToDatabase(userId),
+              onPressed: _saveEventToDatabase,
               icon: const Icon(Icons.save),
               label: const Text('Save Locally'),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: () => _publishEventToFirestore(userId),
+              onPressed: _publishEventToFirestore,
               icon: const Icon(Icons.cloud_upload),
               label: const Text('Publish Event'),
             ),
