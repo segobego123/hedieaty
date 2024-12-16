@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_phase_1/screens/login_screen.dart';
+import 'profile_page_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -12,51 +14,51 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  final _formKey = GlobalKey<FormState>();
+  Future<void> _signup() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-  Future<void> _registerUser() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        // Create user with Firebase Authentication
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+    try {
+      // Create a user with Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-        // Get the newly created user's UID
-        String uid = userCredential.user!.uid;
+      final userId = userCredential.user!.uid;
 
-        // Save additional user details in Firestore
-        await FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'name': _nameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'phone': _phoneController.text.trim(),
-          'preferences': '', // Empty for now
-        });
+      // Save user details in Firestore
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'userId': userId,
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': null, // Placeholder for phone
+        'birthday': null, // Placeholder for birthday
+        'job': null, // Placeholder for job
+      });
 
-        // Navigate to login or dashboard screen
-        Navigator.pushReplacementNamed(context, '/login');
-      } on FirebaseAuthException catch (e) {
-        String message;
-        if (e.code == 'email-already-in-use') {
-          message = 'This email is already in use.';
-        } else if (e.code == 'weak-password') {
-          message = 'The password provided is too weak.';
-        } else {
-          message = 'An error occurred. Please try again.';
-        }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signup successful')),
+      );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An unexpected error occurred. Please try again.')),
-        );
-      }
+      // Navigate to another screen (e.g., Profile Page)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -64,50 +66,36 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sign Up'),
+        title: const Text('Signup'),
         backgroundColor: Colors.deepOrangeAccent,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Full Name'),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Enter your name' : null,
-              ),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: (value) =>
-                value == null || value.isEmpty ? 'Enter a valid email' : null,
-              ),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(labelText: 'Phone Number'),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Enter your phone number'
-                    : null,
-              ),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password'),
-                validator: (value) =>
-                value == null || value.length < 6 ? 'Enter a valid password' : null,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _registerUser,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrangeAccent),
-                child: const Text('Sign Up'),
-              ),
-            ],
-          ),
+        child: Column(
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Full Name'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password'),
+            ),
+            const SizedBox(height: 20),
+            _isLoading
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+              onPressed: _signup,
+              child: const Text('Signup'),
+            ),
+          ],
         ),
       ),
     );

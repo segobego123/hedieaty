@@ -33,6 +33,7 @@ dependencies:
   firebase_database: ^11.2.0
   cloud_firestore: ^5.5.1
   sqflite: ^2.4.1
+  intl: ^0.20.1
   flutter:
     sdk: flutter
 

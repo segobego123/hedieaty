@@ -49,7 +49,7 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ProfilePageScreen(userId: userId),
+                    builder: (_) => ProfilePageScreen(),
                   ),
                 );
               },
