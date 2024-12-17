@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class MyEventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -17,6 +18,7 @@ class _MyEventDetailsScreenState extends State<MyEventDetailsScreen> {
   late TextEditingController _locationController;
   late TextEditingController _descriptionController;
   bool _isLoading = true;
+  DateTime? _selectedEventDate;
 
   @override
   void initState() {
@@ -37,6 +39,7 @@ class _MyEventDetailsScreenState extends State<MyEventDetailsScreen> {
         _dateController = TextEditingController(text: eventData['date']);
         _locationController = TextEditingController(text: eventData['location']);
         _descriptionController = TextEditingController(text: eventData['description']);
+        _selectedEventDate = DateTime.parse(eventData['date']);
       } else {
         _nameController = TextEditingController();
         _dateController = TextEditingController();
@@ -54,6 +57,23 @@ class _MyEventDetailsScreenState extends State<MyEventDetailsScreen> {
     }
   }
 
+  Future<void> _selectEventDate(BuildContext context) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedEventDate ?? DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+
+    if (pickedDate != null && pickedDate != _selectedEventDate) {
+      setState(() {
+        _selectedEventDate = pickedDate;
+        // Store the date in ISO 8601 format: "yyyy-MM-ddTHH:mm:ss.SSS"
+        _dateController.text = pickedDate.toIso8601String();
+      });
+    }
+  }
+
   Future<void> _saveEventDetails() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -66,7 +86,7 @@ class _MyEventDetailsScreenState extends State<MyEventDetailsScreen> {
             .doc(widget.eventId)
             .update({
           'name': _nameController.text,
-          'date': _dateController.text,
+          'date': _dateController.text, // Save the date as ISO string
           'location': _locationController.text,
           'description': _descriptionController.text,
         });
@@ -118,15 +138,20 @@ class _MyEventDetailsScreenState extends State<MyEventDetailsScreen> {
                 },
               ),
               const SizedBox(height: 10),
-              TextFormField(
-                controller: _dateController,
-                decoration: const InputDecoration(labelText: 'Event Date'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the event date';
-                  }
-                  return null;
-                },
+              GestureDetector(
+                onTap: () => _selectEventDate(context),
+                child: AbsorbPointer(
+                  child: TextFormField(
+                    controller: _dateController,
+                    decoration: const InputDecoration(labelText: 'Event Date'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter the event date';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
               TextFormField(
