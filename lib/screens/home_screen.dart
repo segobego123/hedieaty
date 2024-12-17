@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'profile_page_screen.dart';
+import 'my_events_list_screen.dart';
 import 'event_list_screen.dart';
-import 'manage_friends_screen.dart'; // Import Friend Management Screen
-import 'create_event_screen.dart';   // Import Event Creation Screen
+import 'manage_friends_screen.dart';
+import 'create_event_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -17,8 +19,6 @@ class HomeScreen extends StatelessWidget {
         body: Center(child: Text('Error: No user logged in')),
       );
     }
-
-    final String userId = user.uid;
 
     return Scaffold(
       appBar: AppBar(
@@ -60,7 +60,21 @@ class HomeScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) =>  EventListScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const MyEventsListScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text('All Events'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const EventListScreen(),
+                  ),
                 );
               },
             ),
@@ -71,7 +85,8 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const ManageFriendsScreen()),
+                    builder: (_) => const ManageFriendsScreen(),
+                  ),
                 );
               },
             ),
@@ -106,15 +121,15 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const CreateEventScreen()),
+                    builder: (_) => const CreateEventScreen(),
+                  ),
                 );
               },
               icon: const Icon(Icons.add),
               label: const Text('Create Event'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepOrangeAccent,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
             ),
             const SizedBox(height: 20),
@@ -123,15 +138,15 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => EventListScreen()),
+                    builder: (_) => const MyEventsListScreen(),
+                  ),
                 );
               },
               icon: const Icon(Icons.event),
-              label: const Text('View Events'),
+              label: const Text('My Events'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepOrangeAccent,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
             ),
             const SizedBox(height: 20),
@@ -140,15 +155,15 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const ManageFriendsScreen()),
+                    builder: (_) => const EventListScreen(),
+                  ),
                 );
               },
-              icon: const Icon(Icons.group),
-              label: const Text('Manage Friends'),
+              icon: const Icon(Icons.calendar_today),
+              label: const Text('All Events'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepOrangeAccent,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
             ),
           ],

@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'gift_list_screen.dart';
+import 'gift_list_screen.dart'; // Import GiftListScreen
 
 class EventDetailsScreen extends StatelessWidget {
-  final String eventId; // Use eventId to fetch details from Firestore.
+  final String eventId;
+  final bool isEditable; // Determines whether the screen allows editing
 
-  const EventDetailsScreen({super.key, required this.eventId});
+  const EventDetailsScreen({
+    super.key,
+    required this.eventId,
+    required this.isEditable,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -62,21 +67,21 @@ class EventDetailsScreen extends StatelessWidget {
                   title: const Text('Event Description'),
                   subtitle: Text(eventDescription),
                 ),
+                const Divider(),
+                // Button to navigate to Gift List if editable
                 const SizedBox(height: 20),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => GiftListScreen(eventId: eventId),
-                        ),
-                      );
+                ElevatedButton(
+                  onPressed: () {
+                    // Navigate to the GiftListScreen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GiftListScreen(eventId: eventId),
+                      ),
+                    );
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrangeAccent),
-                    child: const Text('View Gifts'),
+                  child: const Text('View Gifts'),
                   ),
-                ),
               ],
             ),
           );

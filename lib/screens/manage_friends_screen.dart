@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'friend_specific_page_screen.dart';
 
 class ManageFriendsScreen extends StatefulWidget {
   const ManageFriendsScreen({super.key});
@@ -11,10 +12,12 @@ class ManageFriendsScreen extends StatefulWidget {
 
 class _ManageFriendsScreenState extends State<ManageFriendsScreen> {
   final TextEditingController _emailController = TextEditingController();
-  final String currentUserId = FirebaseAuth.instance.currentUser!.uid; // Replace dummy ID with FirebaseAuth user ID
+  final String currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
+  /// Add a friend by email
   Future<void> _addFriend(String friendEmail) async {
     try {
+      // Find the friend's user document by email
       final userSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .where('email', isEqualTo: friendEmail)
@@ -29,9 +32,25 @@ class _ManageFriendsScreenState extends State<ManageFriendsScreen> {
 
       final friendId = userSnapshot.docs.first.id;
 
-      // Add friend to the friend list
-      await FirebaseFirestore.instance.collection('friends').add({
-        'userId': currentUserId,
+      // Check if the friend already exists in the subcollection
+      final friendsRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .collection('friends');
+
+      final existingFriendSnapshot = await friendsRef
+          .where('friendId', isEqualTo: friendId)
+          .get();
+
+      if (existingFriendSnapshot.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Friend already added')),
+        );
+        return;
+      }
+
+      // Add friend to the subcollection
+      await friendsRef.add({
         'friendId': friendId,
       });
 
@@ -48,8 +67,34 @@ class _ManageFriendsScreenState extends State<ManageFriendsScreen> {
     }
   }
 
+  /// Remove a friend by document ID
+  Future<void> _removeFriend(String friendDocId) async {
+    try {
+      // Delete the friend document from the subcollection
+      final friendsRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .collection('friends');
+
+      await friendsRef.doc(friendDocId).delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Friend removed successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error removing friend: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final friendsRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUserId)
+        .collection('friends');
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage Friends'),
@@ -77,10 +122,7 @@ class _ManageFriendsScreenState extends State<ManageFriendsScreen> {
             const SizedBox(height: 10),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('friends')
-                    .where('userId', isEqualTo: currentUserId)
-                    .snapshots(),
+                stream: friendsRef.snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -94,15 +136,15 @@ class _ManageFriendsScreenState extends State<ManageFriendsScreen> {
                     return const Center(child: Text('No friends added yet.'));
                   }
 
-                  final friends = snapshot.data!.docs;
+                  final friendDocs = snapshot.data!.docs;
 
                   return ListView.builder(
-                    itemCount: friends.length,
+                    itemCount: friendDocs.length,
                     itemBuilder: (context, index) {
-                      final friend = friends[index];
-                      final friendId = friend['friendId'];
+                      final friendDoc = friendDocs[index];
+                      final friendId = friendDoc['friendId'];
 
-                      // Fetch friend details
+                      // Fetch friend details from users collection
                       return FutureBuilder<DocumentSnapshot>(
                         future: FirebaseFirestore.instance
                             .collection('users')
@@ -119,23 +161,29 @@ class _ManageFriendsScreenState extends State<ManageFriendsScreen> {
                             );
                           }
 
-                          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                          final friendData = userSnapshot.data!.data() as Map<String, dynamic>;
+                          final friendName = friendData['name'] ?? 'Unknown User';
+                          final friendEmail = friendData['email'] ?? '';
 
                           return ListTile(
-                            title: Text(userData['name'] ?? 'Unknown User'),
-                            subtitle: Text(userData['email'] ?? ''),
+                            title: Text(friendName),
+                            subtitle: Text(friendEmail),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                await FirebaseFirestore.instance
-                                    .collection('friends')
-                                    .doc(friend.id)
-                                    .delete();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Friend removed successfully')),
-                                );
-                              },
+                              onPressed: () => _removeFriend(friendDoc.id),
                             ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FriendSpecificPage(
+                                    friendId: friendId,
+                                    friendName: friendName,
+
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       );
