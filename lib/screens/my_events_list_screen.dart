@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import 'my_event_details_screen.dart';
 
 class MyEventsListScreen extends StatelessWidget {
@@ -40,7 +41,7 @@ class MyEventsListScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final event = events[index].data() as Map<String, dynamic>;
               final eventName = event["name"] ?? "Unnamed Event";
-              final eventDate = event["date"] ?? "No date provided";
+              final eventDate = DateFormat.yMMMMd().format(DateTime.parse(event["date"])) ?? "No date provided";
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

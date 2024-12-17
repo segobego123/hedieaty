@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class GiftDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> gift;
-  final String giftId; // Pass the Firestore gift document ID.
-  final String eventId; // Pass the Firestore event document ID.
+  final String giftId; // Firestore gift document ID
+  final String eventId; // Firestore event document ID
 
   const GiftDetailsScreen({
     super.key,
@@ -14,8 +15,20 @@ class GiftDetailsScreen extends StatelessWidget {
   });
 
   void _pledgeGift(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be signed in to pledge a gift.')),
+      );
+      return;
+    }
+
+    final userId = user.uid;
+    final now = DateTime.now();
+
     try {
-      // Update the status field in Firestore.
+      // Step 1: Update gift status
       await FirebaseFirestore.instance
           .collection('events')
           .doc(eventId)
@@ -23,17 +36,28 @@ class GiftDetailsScreen extends StatelessWidget {
           .doc(giftId)
           .update({'status': 'Pledged'});
 
-      // Show confirmation message.
+      // Step 2: Add to user's pledged_gifts
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('pledged_gifts')
+          .add({
+        'giftName': gift['name'] ?? 'Unnamed Gift',
+        'eventDate': gift['dueDate'] ?? 'No Date',
+        'friendId': gift['friendId'] ?? 'Unknown',
+        'pledgedAt': now.toIso8601String(),
+        'eventId': eventId,
+        'giftId': giftId,
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gift status updated to Pledged!')),
+        const SnackBar(content: Text('Gift pledged successfully!')),
       );
 
-      // Optionally, navigate back or refresh the screen.
       Navigator.pop(context);
     } catch (error) {
-      // Show error message if update fails.
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update gift status: $error')),
+        SnackBar(content: Text('Failed to pledge gift: $error')),
       );
     }
   }
@@ -57,7 +81,7 @@ class GiftDetailsScreen extends StatelessWidget {
             const SizedBox(height: 10),
             Text("Status: ${gift["status"] ?? "Unknown"}"),
             const SizedBox(height: 10),
-            if (gift.containsKey("price")) // Check if price exists.
+            if (gift.containsKey("price"))
               Text("Price: \$${gift["price"] ?? "N/A"}"),
             const SizedBox(height: 20),
             const Text(

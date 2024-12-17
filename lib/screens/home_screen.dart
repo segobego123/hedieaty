@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'profile_page_screen.dart';
 import 'my_events_list_screen.dart';
 import 'event_list_screen.dart';
 import 'manage_friends_screen.dart';
 import 'create_event_screen.dart';
+import 'my_pledged_gifts_screen.dart'; // Import the MyPledgedGiftsScreen
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -55,30 +55,6 @@ class HomeScreen extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.event),
-              title: const Text('My Events'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const MyEventsListScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: const Text('All Events'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const EventListScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.group),
               title: const Text('Manage Friends'),
               onTap: () {
@@ -111,8 +87,7 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -161,6 +136,23 @@ class HomeScreen extends StatelessWidget {
               },
               icon: const Icon(Icons.calendar_today),
               label: const Text('All Events'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrangeAccent,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MyPledgedGiftsScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.card_giftcard),
+              label: const Text('My Pledged Gifts'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepOrangeAccent,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
